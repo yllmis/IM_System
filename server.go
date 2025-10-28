@@ -29,12 +29,6 @@ func NewServer(ip string, port int) *Server {
 	return server
 }
 
-func (s *Server) BroadCast(user *User, msg string) {
-	sendMsg := "[" + user.Addr + "]" + user.Name + ": " + msg
-
-	s.Message <- sendMsg
-}
-
 func (s *Server) ListenMessager() {
 	for {
 		msg := <-s.Message
@@ -45,6 +39,12 @@ func (s *Server) ListenMessager() {
 		}
 		s.mapLock.Unlock()
 	}
+}
+
+func (s *Server) BroadCast(user *User, msg string) {
+	sendMsg := "[" + user.Addr + "]" + user.Name + ": " + msg
+
+	s.Message <- sendMsg
 }
 
 func (s *Server) Handler(conn net.Conn) {
@@ -79,13 +79,15 @@ func (s *Server) Handler(conn net.Conn) {
 	}()
 
 	//超时强制下线
-	select {
-	case <-isAlive:
-	case <-time.After(time.Second * 300):
-		user.SendMsg("你被强制下线\n")
-		close(user.C)
-		conn.Close()
-		return
+	for {
+		select {
+		case <-isAlive:
+		case <-time.After(time.Second * 300):
+			user.SendMsg("你被强制下线\n")
+			close(user.C)
+			conn.Close()
+			return
+		}
 	}
 }
 
