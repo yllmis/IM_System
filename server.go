@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -54,6 +55,8 @@ func (s *Server) Handler(conn net.Conn) {
 
 	user.Online()
 
+	isAlive := make(chan bool)
+
 	go func() {
 		buf := make([]byte, 4096)
 
@@ -70,8 +73,20 @@ func (s *Server) Handler(conn net.Conn) {
 
 			msg := string(buf[:n-2])
 			user.DoMessage(msg)
+
+			isAlive <- true
 		}
 	}()
+
+	//超时强制下线
+	select {
+	case <-isAlive:
+	case <-time.After(time.Second * 300):
+		user.SendMsg("你被强制下线\n")
+		close(user.C)
+		conn.Close()
+		return
+	}
 }
 
 // 启动服务器的接口
