@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"net"
+	"os"
 )
 
 type Client struct {
@@ -31,6 +33,16 @@ func NewClient(serverIp string, serverPort int) *Client {
 	return client
 }
 
+func (client *Client) DealResponse() {
+	//一旦client.conn有数据，就copy到stdout标准输出上，永久阻塞监听
+	io.Copy(os.Stdout, client.conn)
+	// for {
+	// 	buf := make()
+	// 	client.conn.Read(buf)
+	// 	fmt.Println(string(buf))
+	// }
+}
+
 func (client *Client) menu() bool {
 	var flag int
 
@@ -52,6 +64,19 @@ func (client *Client) menu() bool {
 	}
 }
 
+func (client *Client) UpdateName() bool {
+	fmt.Print(">>>>>请输入用户名: ")
+	fmt.Scanln(&client.Name)
+
+	sendMsg := "rename|" + client.Name + "\n"
+	_, err := client.conn.Write([]byte(sendMsg))
+	if err != nil {
+		fmt.Println("conn.Write err:", err)
+		return false
+	}
+	return true
+}
+
 func (client *Client) Run() {
 	for client.flag != 0 {
 		for client.menu() != true {
@@ -60,10 +85,13 @@ func (client *Client) Run() {
 		switch client.flag {
 		case 1:
 			fmt.Println("公聊模式选择...")
+			break
 		case 2:
 			fmt.Println("私聊模式选择...")
+			break
 		case 3:
-			fmt.Println("修改用户名选择...")
+			client.UpdateName()
+			break
 		}
 	}
 }
@@ -85,6 +113,9 @@ func main() {
 		fmt.Println(">>>>>Failed to create client")
 		return
 	}
+
+	go client.DealResponse()
+
 	fmt.Println(">>>>>Client connected to server:", client.ServerIp, ":", client.ServerPort)
 	client.Run()
 }
