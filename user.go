@@ -36,7 +36,7 @@ func (this *User) Online() {
 	this.server.OnlineMap[this.Name] = this
 	this.server.mapLock.Unlock()
 
-	this.server.BroadCast(this, "已上线\n")
+	this.server.BroadCast(this, "已上线")
 }
 
 func (this *User) Offline() {
@@ -44,7 +44,7 @@ func (this *User) Offline() {
 	delete(this.server.OnlineMap, this.Name)
 	this.server.mapLock.Unlock()
 
-	this.server.BroadCast(this, "已下线\n")
+	this.server.BroadCast(this, "已下线")
 }
 
 func (this *User) SendMsg(msg string) {
